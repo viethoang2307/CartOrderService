@@ -31,6 +31,17 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <Button
+            android:id="@+id/btnViewOrders"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:text="My Orders"
+            android:textAllCaps="false"
+            android:textColor="@color/orange" />
+
     </androidx.appcompat.widget.Toolbar>
 
     <androidx.core.widget.NestedScrollView
