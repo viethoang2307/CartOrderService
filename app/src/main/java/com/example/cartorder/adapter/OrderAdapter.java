@@ -89,6 +89,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         return orders.size();
     }
 
+    public void updateOrders(List<Order> newOrders) {
+        this.orders.clear();
+        this.orders.addAll(newOrders);
+        notifyDataSetChanged();
+    }
+
     static class OrderViewHolder extends RecyclerView.ViewHolder {
         TextView tvOrderId;
         TextView tvOrderDate;

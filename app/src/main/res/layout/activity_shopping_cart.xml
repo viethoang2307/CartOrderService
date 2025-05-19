@@ -56,6 +56,18 @@
             android:orientation="vertical"
             android:paddingBottom="80dp">
 
+            <!-- Empty Cart Message -->
+            <TextView
+                android:id="@+id/tvEmptyCart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:gravity="center"
+                android:text="Your cart is empty"
+                android:textColor="@color/gray"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
             <!-- Cart Items -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerCartItems"
@@ -135,7 +147,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="end"
-                    android:text="$1,198"
+                    android:text="$0"
                     android:textColor="@color/black"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -156,5 +168,21 @@
         android:textAllCaps="false"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Loading Overlay -->
+    <FrameLayout
+        android:id="@+id/loadingView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -40,7 +40,7 @@ public class OrderProductAdapter extends RecyclerView.Adapter<OrderProductAdapte
         holder.tvOrderProductName.setText(product.getName());
         holder.tvOrderProductQuantity.setText("Qty: " + product.getQuantity());
         holder.tvOrderProductPrice.setText(String.format("$%d", (int)product.getPrice()));
-        holder.ivOrderProduct.setImageResource(product.getImageResource());
+        holder.ivOrderProduct.setImageResource(Integer.parseInt(product.getImageResource()));
     }
 
     @Override

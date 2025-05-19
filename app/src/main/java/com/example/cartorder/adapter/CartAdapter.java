@@ -13,6 +13,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.cartorder.R;
 import com.example.cartorder.entity.CartItem;
 
@@ -50,7 +51,16 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
         holder.tvQuantityValue.setText(String.valueOf(item.getQuantity()));
         holder.tvPrice.setText(String.format("$%d", (int)item.getPrice()));
-        holder.ivProduct.setImageResource(item.getImageResource());
+
+        // Load image using Glide
+        if (item.getImageResource() != null && !item.getImageResource().isEmpty()) {
+            Glide.with(context)
+                    .load(item.getImageResource())
+                    .placeholder(R.drawable.placeholder_image)
+                    .into(holder.ivProduct);
+        } else {
+            holder.ivProduct.setImageResource(Integer.parseInt(item.getImageResource()));
+        }
 
         holder.btnDecrease.setOnClickListener(v -> {
             int newQuantity = item.getQuantity() - 1;
@@ -72,9 +82,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
         holder.ivRemove.setOnClickListener(v -> {
             listener.onRemoveItem(item);
-            cartItems.remove(position);
-            notifyItemRemoved(position);
-            notifyItemRangeChanged(position, cartItems.size());
         });
     }
 
@@ -85,6 +92,12 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
     public List<CartItem> getCartItems() {
         return cartItems;
+    }
+
+    public void updateCartItems(List<CartItem> newItems) {
+        this.cartItems.clear();
+        this.cartItems.addAll(newItems);
+        notifyDataSetChanged();
     }
 
     static class CartViewHolder extends RecyclerView.ViewHolder {
@@ -110,3 +123,4 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         }
     }
 }
+

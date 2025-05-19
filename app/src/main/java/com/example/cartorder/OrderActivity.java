@@ -1,22 +1,33 @@
 package com.example.cartorder;
 
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cartorder.adapter.OrderAdapter;
+import com.example.cartorder.api.ApiClient;
+import com.example.cartorder.api.CartOrderService;
 import com.example.cartorder.entity.Order;
+import com.example.cartorder.entity.OrderItemModel;
+import com.example.cartorder.entity.OrderListResponse;
+import com.example.cartorder.entity.OrderModel;
 import com.example.cartorder.entity.OrderProduct;
+import com.example.cartorder.entity.UserResponse;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class OrderActivity extends AppCompatActivity {
 
@@ -24,50 +35,57 @@ public class OrderActivity extends AppCompatActivity {
     private TextView tvEmptyOrders;
     private OrderAdapter orderAdapter;
     private ImageButton btnBack;
+    private View loadingView;
+
+    private CartOrderService cartOrderService;
+    private String userId;
+    private String userName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order);
 
+        // Initialize API service
+        cartOrderService = ApiClient.getClient().create(CartOrderService.class);
+
+        // Get user ID from SharedPreferences (in a real app, this would come from your auth system)
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        userId = prefs.getString("userId", "user123"); // Default to "user123" if not found
+
         initViews();
         setupOrdersRecyclerView();
         setupListeners();
+
+        // Get user info first, then load orders
+        getUserInfo();
     }
 
     private void initViews() {
         recyclerOrders = findViewById(R.id.recyclerOrders);
         tvEmptyOrders = findViewById(R.id.tvEmptyOrders);
         btnBack = findViewById(R.id.btnBack);
+        loadingView = findViewById(R.id.loadingView);
     }
 
     private void setupOrdersRecyclerView() {
         recyclerOrders.setLayoutManager(new LinearLayoutManager(this));
 
-        // Sample data - in a real app, this would come from your data source
-        List<Order> orders = getSampleOrders();
+        orderAdapter = new OrderAdapter(this, new ArrayList<>(), new OrderAdapter.OrderListener() {
+            @Override
+            public void onTrackOrder(Order order) {
+                // Track order logic would go here
+                Toast.makeText(OrderActivity.this, "Tracking order #" + order.getId(), Toast.LENGTH_SHORT).show();
+            }
 
-        if (orders.isEmpty()) {
-            tvEmptyOrders.setVisibility(View.VISIBLE);
-            recyclerOrders.setVisibility(View.GONE);
-        } else {
-            tvEmptyOrders.setVisibility(View.GONE);
-            recyclerOrders.setVisibility(View.VISIBLE);
+            @Override
+            public void onReorder(Order order) {
+                // Reorder logic would go here
+                Toast.makeText(OrderActivity.this, "Reordering items from order #" + order.getId(), Toast.LENGTH_SHORT).show();
+            }
+        });
 
-            orderAdapter = new OrderAdapter(this, orders, new OrderAdapter.OrderListener() {
-                @Override
-                public void onTrackOrder(Order order) {
-                    // Track order logic would go here
-                }
-
-                @Override
-                public void onReorder(Order order) {
-                    // Reorder logic would go here
-                }
-            });
-
-            recyclerOrders.setAdapter(orderAdapter);
-        }
+        recyclerOrders.setAdapter(orderAdapter);
     }
 
     private void setupListeners() {
@@ -79,51 +97,106 @@ public class OrderActivity extends AppCompatActivity {
         });
     }
 
-    private List<Order> getSampleOrders() {
-        List<Order> orders = new ArrayList<>();
+    private void getUserInfo() {
+        showLoading(true);
 
-        // Order 1
-        List<OrderProduct> products1 = new ArrayList<>();
-        products1.add(new OrderProduct(1, "Jon Sinanggarwik sofa", 599, 1, R.drawable.placeholder_image));
-        products1.add(new OrderProduct(2, "Swelom chair", 400, 1, R.drawable.placeholder_image));
+        cartOrderService.getUserInfo(userId).enqueue(new Callback<UserResponse>() {
+            @Override
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    UserResponse userResponse = response.body();
+                    userName = userResponse.getName();
 
-        Order order1 = new Order(
-                "12345",
-                "May 15, 2023",
-                "Delivered",
-                products1,
-                999
-        );
+                    // Now load the orders
+                    loadOrdersData();
+                } else {
+                    showLoading(false);
+                    showError("Failed to load user information");
+                    // Still try to load orders even if user info fails
+                    loadOrdersData();
+                }
+            }
 
-        // Order 2
-        List<OrderProduct> products2 = new ArrayList<>();
-        products2.add(new OrderProduct(3, "Kallax chair", 199, 2, R.drawable.placeholder_image));
-        products2.add(new OrderProduct(4, "Kirim sofa", 599, 1, R.drawable.placeholder_image));
+            @Override
+            public void onFailure(Call<UserResponse> call, Throwable t) {
+                showLoading(false);
+                showError("Network error: " + t.getMessage());
+                // Still try to load orders even if user info fails
+                loadOrdersData();
+            }
+        });
+    }
 
-        Order order2 = new Order(
-                "12346",
-                "April 28, 2023",
-                "Processing",
-                products2,
-                997
-        );
+    private void loadOrdersData() {
+        showLoading(true);
 
-        // Order 3
-        List<OrderProduct> products3 = new ArrayList<>();
-        products3.add(new OrderProduct(5, "Grundlid sofa", 499, 1, R.drawable.placeholder_image));
+        cartOrderService.getOrderHistory(userId).enqueue(new Callback<OrderListResponse>() {
+            @Override
+            public void onResponse(Call<OrderListResponse> call, Response<OrderListResponse> response) {
+                showLoading(false);
 
-        Order order3 = new Order(
-                "12347",
-                "April 10, 2023",
-                "Cancelled",
-                products3,
-                499
-        );
+                if (response.isSuccessful() && response.body() != null) {
+                    List<OrderModel> orderModels = response.body().getOrders();
+                    updateOrdersUI(orderModels);
+                } else {
+                    showError("Failed to load orders");
+                    tvEmptyOrders.setVisibility(View.VISIBLE);
+                    recyclerOrders.setVisibility(View.GONE);
+                }
+            }
 
-        orders.add(order1);
-        orders.add(order2);
-        orders.add(order3);
+            @Override
+            public void onFailure(Call<OrderListResponse> call, Throwable t) {
+                showLoading(false);
+                showError("Network error: " + t.getMessage());
+                tvEmptyOrders.setVisibility(View.VISIBLE);
+                recyclerOrders.setVisibility(View.GONE);
+            }
+        });
+    }
 
-        return orders;
+    private void updateOrdersUI(List<OrderModel> orderModels) {
+        if (orderModels == null || orderModels.isEmpty()) {
+            tvEmptyOrders.setVisibility(View.VISIBLE);
+            recyclerOrders.setVisibility(View.GONE);
+        } else {
+            tvEmptyOrders.setVisibility(View.GONE);
+            recyclerOrders.setVisibility(View.VISIBLE);
+
+            // Convert API models to UI models
+            List<Order> orders = new ArrayList<>();
+            for (OrderModel orderModel : orderModels) {
+                // Convert order items
+                List<OrderProduct> products = new ArrayList<>();
+                for (OrderItemModel item : orderModel.getItems()) {
+                    products.add(new OrderProduct(
+                            item.getId(),
+                            item.getName(),
+                            item.getPrice(),
+                            item.getQuantity(),
+                            item.getImageUrl()
+                    ));
+                }
+
+                orders.add(new Order(
+                        orderModel.getId(),
+                        orderModel.getOrderDate(),
+                        orderModel.getStatus(),
+                        products,
+                        orderModel.getTotal()
+                ));
+            }
+
+            orderAdapter.updateOrders(orders);
+        }
+    }
+
+    private void showLoading(boolean isLoading) {
+        loadingView.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+    }
+
+    private void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }
+

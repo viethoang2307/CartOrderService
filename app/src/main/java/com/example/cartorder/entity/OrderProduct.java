@@ -6,9 +6,9 @@ public class OrderProduct {
     private String name;
     private double price;
     private int quantity;
-    private int imageResource;
+    private String imageResource;
 
-    public OrderProduct(int id, String name, double price, int quantity, int imageResource) {
+    public OrderProduct(int id, String name, double price, int quantity, String imageResource) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -32,7 +32,7 @@ public class OrderProduct {
         return quantity;
     }
 
-    public int getImageResource() {
+    public String getImageResource() {
         return imageResource;
     }
 }
