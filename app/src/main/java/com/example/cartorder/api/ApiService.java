@@ -5,6 +5,7 @@ import com.example.cartorder.entity.OrderListResponse;
 import com.example.cartorder.entity.OrderResponse;
 import com.example.cartorder.entity.ProductResponse;
 import com.example.cartorder.entity.UpdateCartRequest;
+import com.example.cartorder.entity.OrderRequest;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -40,7 +41,7 @@ public interface ApiService {
     Call<OrderResponse> getOrderDetails(@Path("orderId") String orderId);
 
     @POST("orders")
-    Call<OrderResponse> createOrder();
+    Call<OrderResponse> createOrder(@Body OrderRequest request);
 
     @POST("orders/{orderId}/reorder")
     Call<CartResponse> reorder(@Path("orderId") String orderId);

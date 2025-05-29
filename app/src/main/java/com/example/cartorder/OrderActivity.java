@@ -3,6 +3,7 @@ package com.example.cartorder;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -22,6 +23,7 @@ import com.example.cartorder.entity.OrderModel;
 import com.example.cartorder.entity.OrderProduct;
 import com.example.cartorder.entity.UserResponse;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,14 +53,14 @@ public class OrderActivity extends AppCompatActivity {
 
         // Get user ID from SharedPreferences (in a real app, this would come from your auth system)
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        userId = prefs.getString("userId", "user123"); // Default to "user123" if not found
+        userId = prefs.getString("userId", "user456"); // Default to "user456" if not found
 
         initViews();
         setupOrdersRecyclerView();
         setupListeners();
 
-        // Get user info first, then load orders
-        getUserInfo();
+        // Load orders directly
+        loadOrdersData();
     }
 
     private void initViews() {
@@ -99,6 +101,7 @@ public class OrderActivity extends AppCompatActivity {
 
     private void getUserInfo() {
         showLoading(true);
+        Log.d("OrderActivity", "Getting user info for userId: " + userId);
 
         cartOrderService.getUserInfo(userId).enqueue(new Callback<UserResponse>() {
             @Override
@@ -106,11 +109,19 @@ public class OrderActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     UserResponse userResponse = response.body();
                     userName = userResponse.getName();
+                    Log.d("OrderActivity", "Got user info successfully: " + userName);
 
                     // Now load the orders
                     loadOrdersData();
                 } else {
                     showLoading(false);
+                    String errorBody = "";
+                    try {
+                        errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                    } catch (IOException e) {
+                        errorBody = "Error reading error body";
+                    }
+                    Log.e("OrderActivity", "Failed to load user info. Error: " + errorBody);
                     showError("Failed to load user information");
                     // Still try to load orders even if user info fails
                     loadOrdersData();
@@ -120,6 +131,7 @@ public class OrderActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<UserResponse> call, Throwable t) {
                 showLoading(false);
+                Log.e("OrderActivity", "Network error getting user info", t);
                 showError("Network error: " + t.getMessage());
                 // Still try to load orders even if user info fails
                 loadOrdersData();
@@ -129,6 +141,7 @@ public class OrderActivity extends AppCompatActivity {
 
     private void loadOrdersData() {
         showLoading(true);
+        Log.d("OrderActivity", "Loading orders for userId: " + userId);
 
         cartOrderService.getOrderHistory(userId).enqueue(new Callback<OrderListResponse>() {
             @Override
@@ -137,8 +150,16 @@ public class OrderActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null) {
                     List<OrderModel> orderModels = response.body().getOrders();
+                    Log.d("OrderActivity", "Got " + (orderModels != null ? orderModels.size() : 0) + " orders");
                     updateOrdersUI(orderModels);
                 } else {
+                    String errorBody = "";
+                    try {
+                        errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                    } catch (IOException e) {
+                        errorBody = "Error reading error body";
+                    }
+                    Log.e("OrderActivity", "Failed to load orders. Error: " + errorBody);
                     showError("Failed to load orders");
                     tvEmptyOrders.setVisibility(View.VISIBLE);
                     recyclerOrders.setVisibility(View.GONE);
@@ -148,6 +169,7 @@ public class OrderActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<OrderListResponse> call, Throwable t) {
                 showLoading(false);
+                Log.e("OrderActivity", "Network error loading orders", t);
                 showError("Network error: " + t.getMessage());
                 tvEmptyOrders.setVisibility(View.VISIBLE);
                 recyclerOrders.setVisibility(View.GONE);

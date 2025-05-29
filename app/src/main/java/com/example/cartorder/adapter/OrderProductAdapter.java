@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.cartorder.R;
 import com.example.cartorder.entity.OrderProduct;
 
@@ -39,8 +40,30 @@ public class OrderProductAdapter extends RecyclerView.Adapter<OrderProductAdapte
 
         holder.tvOrderProductName.setText(product.getName());
         holder.tvOrderProductQuantity.setText("Qty: " + product.getQuantity());
-        holder.tvOrderProductPrice.setText(String.format("$%d", (int)product.getPrice()));
-        holder.ivOrderProduct.setImageResource(Integer.parseInt(product.getImageResource()));
+        holder.tvOrderProductPrice.setText(String.format("$%.2f", product.getPrice()));
+
+        // Load image using Glide
+        if (product.getImageResource() != null && !product.getImageResource().isEmpty()) {
+            try {
+                // Try to load as URL first
+                Glide.with(context)
+                        .load(product.getImageResource())
+                        .placeholder(R.drawable.placeholder_image)
+                        .error(R.drawable.placeholder_image)
+                        .into(holder.ivOrderProduct);
+            } catch (Exception e) {
+                // If URL loading fails, try to load as resource ID
+                try {
+                    int resourceId = Integer.parseInt(product.getImageResource());
+                    holder.ivOrderProduct.setImageResource(resourceId);
+                } catch (NumberFormatException ex) {
+                    // If both fail, show placeholder
+                    holder.ivOrderProduct.setImageResource(R.drawable.placeholder_image);
+                }
+            }
+        } else {
+            holder.ivOrderProduct.setImageResource(R.drawable.placeholder_image);
+        }
     }
 
     @Override

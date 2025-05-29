@@ -25,6 +25,10 @@
         <activity
             android:name=".OrderActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".CheckoutActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

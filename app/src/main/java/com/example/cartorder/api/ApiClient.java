@@ -10,7 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ApiClient {
     // Update this URL to match your local development server
     // For Android Emulator, use 10.0.2.2 instead of localhost
-    private static final String BASE_URL = "http://10.0.2.2:3000/";
+    private static final String BASE_URL = "http://10.0.2.2:3000";
 
     private static Retrofit retrofit = null;
 

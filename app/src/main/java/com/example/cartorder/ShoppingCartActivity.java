@@ -112,7 +112,7 @@ public class ShoppingCartActivity extends AppCompatActivity {
         btnCheckout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                createOrder();
+                navigateToCheckout();
             }
         });
 
@@ -183,7 +183,21 @@ public class ShoppingCartActivity extends AppCompatActivity {
     }
 
     private void updateCartItemQuantity(int itemId, int newQuantity) {
-        UpdateCartRequest request = new UpdateCartRequest(userId, itemId, newQuantity);
+        // Get productId from currentCartItems
+        CartItemModel cartItem = null;
+        for (CartItemModel item : currentCartItems) {
+            if (item.getId() == itemId) {
+                cartItem = item;
+                break;
+            }
+        }
+
+        if (cartItem == null) {
+            showError("Item not found in cart");
+            return;
+        }
+
+        UpdateCartRequest request = new UpdateCartRequest(userId, cartItem.getProductId(), newQuantity);
 
         cartOrderService.updateCartItem(itemId, request).enqueue(new Callback<CartResponse>() {
             @Override
@@ -226,17 +240,33 @@ public class ShoppingCartActivity extends AppCompatActivity {
         });
     }
 
-    private void createOrder() {
+    private void navigateToCheckout() {
+        if (currentCartItems == null || currentCartItems.isEmpty()) {
+            showError("Your cart is empty");
+            return;
+        }
+        // Launch CheckoutActivity to collect shipping and payment details
+        Intent intent = new Intent(ShoppingCartActivity.this, CheckoutActivity.class);
+        startActivityForResult(intent, 100);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
+            String shippingAddress = data.getStringExtra("shipping_address");
+            String paymentMethod = data.getStringExtra("payment_method");
+            createOrder(shippingAddress, paymentMethod);
+        }
+    }
+
+    private void createOrder(String shippingAddress, String paymentMethod) {
         if (currentCartItems == null || currentCartItems.isEmpty()) {
             showError("Your cart is empty");
             return;
         }
 
         showLoading(true);
-
-        // In a real app, you would collect shipping address and payment method from the user
-        String shippingAddress = "123 Main St, City, Country";
-        String paymentMethod = "Credit Card";
 
         OrderRequest orderRequest = new OrderRequest(userId, currentCartItems, shippingAddress, paymentMethod);
 

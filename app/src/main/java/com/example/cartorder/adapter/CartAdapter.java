@@ -54,12 +54,25 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
         // Load image using Glide
         if (item.getImageResource() != null && !item.getImageResource().isEmpty()) {
-            Glide.with(context)
-                    .load(item.getImageResource())
-                    .placeholder(R.drawable.placeholder_image)
-                    .into(holder.ivProduct);
+            try {
+                // Try to load as URL first
+                Glide.with(context)
+                        .load(item.getImageResource())
+                        .placeholder(R.drawable.placeholder_image)
+                        .error(R.drawable.placeholder_image)
+                        .into(holder.ivProduct);
+            } catch (Exception e) {
+                // If URL loading fails, try to load as resource ID
+                try {
+                    int resourceId = Integer.parseInt(item.getImageResource());
+                    holder.ivProduct.setImageResource(resourceId);
+                } catch (NumberFormatException ex) {
+                    // If both fail, show placeholder
+                    holder.ivProduct.setImageResource(R.drawable.placeholder_image);
+                }
+            }
         } else {
-            holder.ivProduct.setImageResource(Integer.parseInt(item.getImageResource()));
+            holder.ivProduct.setImageResource(R.drawable.placeholder_image);
         }
 
         holder.btnDecrease.setOnClickListener(v -> {
